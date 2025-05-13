@@ -1,0 +1,114 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/project/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model Instruction {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Header fields
+  title          String
+  documentNumber String
+  revision       String
+  date           DateTime
+  author         String
+  department     String
+  category       String
+  tags           String[]
+
+  // Related data
+  parts      Part[]
+  steps      Step[]
+  approvals  Approval[]
+  notes      String?
+  references String?
+  contactInformation String?
+
+  // Change log
+  revisions  Revision[]
+}
+
+model Part {
+  id            String   @id @default(cuid())
+  partNumber    String
+  description   String
+  quantity      Int
+  unit          String
+  reference     String?
+  notes         String?
+  imageUri      String?
+  
+  // Relations
+  instruction   Instruction @relation(fields: [instructionId], references: [id], onDelete: Cascade)
+  instructionId String
+  
+  // Used in steps
+  steps         StepPart[]
+}
+
+model Step {
+  id          String   @id @default(cuid())
+  stepNumber  Int
+  title       String
+  description String
+  duration    Int?
+  warnings    String[]
+  tools       String[]
+  imageUri    String?
+  
+  // Relations
+  instruction   Instruction @relation(fields: [instructionId], references: [id], onDelete: Cascade)
+  instructionId String
+  
+  // Parts used in this step
+  partsUsed     StepPart[]
+}
+
+model StepPart {
+  id      String @id @default(cuid())
+  
+  // Relations
+  step    Step   @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  stepId  String
+  part    Part   @relation(fields: [partId], references: [id], onDelete: Cascade)
+  partId  String
+
+  @@unique([stepId, partId])
+}
+
+model Approval {
+  id        String   @id @default(cuid())
+  name      String
+  role      String
+  date      DateTime
+  
+  // Relations
+  instruction   Instruction @relation(fields: [instructionId], references: [id], onDelete: Cascade)
+  instructionId String
+}
+
+model Revision {
+  id          String   @id @default(cuid())
+  revision    String
+  date        DateTime
+  author      String
+  description String
+  approvedBy  String?
+  sections    String[]
+  jsonContent String    // Store the full JSON content for this revision
+  
+  // Relations
+  instruction   Instruction @relation(fields: [instructionId], references: [id], onDelete: Cascade)
+  instructionId String
+}

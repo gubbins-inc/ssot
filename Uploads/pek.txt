@@ -1,0 +1,998 @@
+# Pektron Operator Instructions: POC Technical Specification
+
+## 1. Data Model & Schema
+
+### Schema Structure
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Pektron Operator Instruction",
+  "type": "object",
+  "required": ["metadata", "parts", "steps", "footer"],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["peoi", "rev", "title", "author", "date_created"],
+      "properties": {
+        "peoi": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{3}$",
+          "description": "Pektron Engineering Operator Instruction number"
+        },
+        "rev": {
+          "type": "string",
+          "pattern": "^[A-Z]$",
+          "description": "Revision letter"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 100
+        },
+        "author": {
+          "type": "string"
+        },
+        "date_created": {
+          "type": "string",
+          "format": "date"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "parts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pekpn", "description"],
+        "properties": {
+          "pekpn": {
+            "type": "string",
+            "pattern": "^[A-Z]{3}-[0-9A-Z]{7}$",
+            "description": "Pektron part number"
+          },
+          "description": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          "is_coshh": {
+            "type": "boolean",
+            "default": false
+          },
+          "coshh_ref": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tool_id", "description"],
+        "properties": {
+          "tool_id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["FIXTURE", "DRIVER", "SOLDER", "TEST", "OTHER"]
+          },
+          "settings": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "text"],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "notes": {
+            "type": "string"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["image_id", "filename"],
+              "properties": {
+                "image_id": {
+                  "type": "string"
+                },
+                "filename": {
+                  "type": "string"
+                },
+                "caption": {
+                  "type": "string"
+                },
+                "output_formats": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": ["pdf", "html", "display"]
+                  },
+                  "default": ["pdf", "html", "display"]
+                }
+              }
+            }
+          },
+          "health_safety": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "footer": {
+      "type": "object",
+      "required": ["issue", "date", "pe"],
+      "properties": {
+        "issue": {
+          "type": "string",
+          "pattern": "^[A-Z]$"
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "pe": {
+          "type": "string",
+          "description": "Production Engineer"
+        },
+        "qa": {
+          "type": "string",
+          "description": "Quality Assurance"
+        },
+        "pd": {
+          "type": "string",
+          "description": "Production Director"
+        }
+      }
+    }
+  }
+}
+```
+
+## 2. Capture UI Design
+
+### Application Layout
+```
++----------------------------------------------------------+
+| PEKTRON OPERATOR INSTRUCTION EDITOR                      |
++---------------+------------------------------------------+
+| HISTORY       | EDITOR PANEL                             |
+| - Rev A       |                                          |
+| - Rev B       | [Tab Navigation]                         |
+|               | 1. Header | 2. Parts | 3. Steps | 4. Footer |
++---------------+------------------------------------------+
+|               | [Content Area]                           |
+|               |                                          |
+|               |                                          |
+|               |                                          |
++---------------+------------------------------------------+
+| JSON PREVIEW                                           |
+| {                                                       |
+|   "metadata": { ... },                                 |
+|   ...                                                  |
+| }                                                       |
++----------------------------------------------------------+
+| [Validate] [Save] [Generate HTML] [Generate PDF]         |
++----------------------------------------------------------+
+```
+
+### Tab 1: Header Input
+- Form fields:
+  - PEOI Number (text, pattern validation)
+  - Revision (single letter dropdown A-Z)
+  - Title (text)
+  - Author (text)
+  - Date Created (date picker, defaults to today)
+  - Description (text area)
+
+### Tab 2: Parts & Tools Input
+- Data grid with add/remove rows:
+  - **Parts Table:**
+    ```
+    +-------+-------------------+----------+---------+------------+
+    | PEKPN | Description       | Quantity | COSHH?  | COSHH Ref  |
+    +-------+-------------------+----------+---------+------------+
+    | [txt] | [txt]             | [number] | [check] | [txt]      |
+    +-------+-------------------+----------+---------+------------+
+    ```
+  - **Tools Table:**
+    ```
+    +----------+-------------------+----------+------------------+
+    | Tool ID  | Description       | Type     | Settings         |
+    +----------+-------------------+----------+------------------+
+    | [txt]    | [txt]             | [select] | [key-value grid] |
+    +----------+-------------------+----------+------------------+
+    ```
+
+### Tab 3: Steps Editor
+- Step controls:
+  ```
+  Step # [1] [+] [-] [↑] [↓]
+  ```
+- Rich text editor:
+  - Toolbar with basic formatting + specialized buttons:
+    - Insert Part Reference `<part ref="PEKPN">`
+    - Insert Tool Reference `<tool ref="TOOL_ID">`
+    - Insert Figure Reference `<figure ref="FIG_ID">`
+  - Text area for step content
+- Image uploader:
+  ```
+  +----------------------------------------------+
+  | Images for this step                         |
+  +----------------------------------------------+
+  | [Upload New] [Remove Selected]               |
+  +----------------------------------------------+
+  | ID    | Preview        | Caption    | Output |
+  +----------------------------------------------+
+  | FIG1  | [thumbnail]    | [text]     | [√]PDF |
+  |       |                |            | [√]HTML|
+  |       |                |            | [√]Disp|
+  +----------------------------------------------+
+  ```
+- Notes field (text area)
+- Health & Safety notes field (text area)
+
+### Tab 4: Footer Input
+- Form fields:
+  - Issue (single letter dropdown A-Z, synced with Revision)
+  - Date (date picker)
+  - Production Engineer (text)
+  - Quality Assurance (text)
+  - Production Director (text)
+
+### JSON Preview Panel
+- Read-only code editor with syntax highlighting
+- Auto-updates as form fields change
+- Visual indicator if current JSON fails validation
+
+### Revision History Panel
+- List of saved revisions (clickable)
+- When two revisions selected, shows diff with:
+  - Added lines in green
+  - Removed lines in red
+  - Changed lines in yellow
+
+## 3. Output Generation
+
+### HTML Template Structure
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{{ metadata.peoi }} - {{ metadata.title }} (Rev {{ metadata.rev }})</title>
+  <style>
+    /* Base styling for all elements */
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+    
+    /* Header styling */
+    .header { 
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 2px solid #333;
+      padding-bottom: 10px;
+    }
+    
+    /* Part table styling */
+    .parts-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    .parts-table th, .parts-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    
+    /* Step styling */
+    .step {
+      margin: 20px 0;
+      padding: 10px;
+      border: 1px solid #eee;
+      border-radius: 4px;
+    }
+    .step-number {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      background-color: #333;
+      color: white;
+      text-align: center;
+      line-height: 30px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+    
+    /* COSHH warning */
+    .coshh-warning {
+      background-color: #fff3cd;
+      border-left: 5px solid #ffc107;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    
+    /* Footer */
+    .footer {
+      margin-top: 30px;
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div>
+      <h1>{{ metadata.peoi }}</h1>
+      <h2>{{ metadata.title }}</h2>
+    </div>
+    <div class="header-right">
+      <p>Rev: {{ metadata.rev }}</p>
+      <p>Author: {{ metadata.author }}</p>
+      <p>Date: {{ metadata.date_created }}</p>
+    </div>
+  </div>
+  
+  <!-- Parts Table -->
+  <h3>Parts Required</h3>
+  <table class="parts-table">
+    <thead>
+      <tr>
+        <th>Part Number</th>
+        <th>Description</th>
+        <th>Quantity</th>
+        {% if any_coshh_parts %}
+        <th>COSHH</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for part in parts %}
+      <tr id="part-{{ part.pekpn }}">
+        <td>{{ part.pekpn }}</td>
+        <td>{{ part.description }}</td>
+        <td>{{ part.quantity|default(1) }}</td>
+        {% if any_coshh_parts %}
+        <td>{% if part.is_coshh %}Yes{% else %}No{% endif %}</td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  
+  {% if tools|length > 0 %}
+  <!-- Tools Table -->
+  <h3>Tools Required</h3>
+  <table class="parts-table">
+    <thead>
+      <tr>
+        <th>Tool ID</th>
+        <th>Description</th>
+        <th>Type</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for tool in tools %}
+      <tr id="tool-{{ tool.tool_id }}">
+        <td>{{ tool.tool_id }}</td>
+        <td>{{ tool.description }}</td>
+        <td>{{ tool.type }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  
+  <!-- Steps -->
+  <h3>Procedure</h3>
+  {% for step in steps %}
+  <div class="step">
+    <span class="step-number">{{ step.id }}</span>
+    <span class="step-text">{{ step.text|process_refs }}</span>
+    
+    {% if step.images|length > 0 %}
+    <div class="step-images">
+      {% for image in step.images %}
+      {% if "html" in image.output_formats %}
+      <figure>
+        <img src="./media/{{ image.filename }}" alt="{{ image.caption }}" style="max-width: 100%; max-height: 300px;">
+        <figcaption>{{ image.caption }}</figcaption>
+      </figure>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+    
+    {% if step.notes %}
+    <div class="step-notes">
+      <strong>Note:</strong> {{ step.notes }}
+    </div>
+    {% endif %}
+    
+    {% if step.health_safety %}
+    <div class="coshh-warning">
+      <strong>Health & Safety:</strong> {{ step.health_safety }}
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+  
+  <!-- Footer -->
+  <div class="footer">
+    <p>Issue: {{ footer.issue }} | Date: {{ footer.date }}</p>
+    <p>Production Engineer: {{ footer.pe }} | QA: {{ footer.qa|default('') }} | PD: {{ footer.pd|default('') }}</p>
+  </div>
+</body>
+</html>
+```
+
+### Reference Processing
+The template uses a custom filter `process_refs` to handle XML-style references:
+
+def process_refs(text):
+    """Replace <part ref="XXX"> and similar tags with proper links"""
+    # Find part references
+    text = re.sub(r'<part ref="([^"]+)">',
+                 r'<a href="#part-\1" class="part-ref">\1</a>',
+                 text)
+
+    # Find tool references
+    text = re.sub(r'<tool ref="([^"]+)">',
+                 r'<a href="#tool-\1" class="tool-ref">\1</a>',
+                 text)
+
+    # Find figure references
+    text = re.sub(r'<figure ref="([^"]+)">',
+                 r'<a href="#figure-\1" class="figure-ref">Figure \1</a>',
+                 text)
+
+    return text
+
+## 4. Data Handling
+
+### File Structure
+```
+/project_root/
+├── app.py                 # Streamlit application
+├── schema.json            # JSON schema
+├── utils/
+│   ├── __init__.py
+│   ├── validators.py      # Schema validation
+│   ├── renderer.py        # HTML/PDF generation
+│   └── diff.py            # Revision comparison
+├── data/                  # JSON storage
+│   └── <peoi>_<rev>_<timestamp>.json
+├── media/                 # Uploaded images
+│   └── <peoi>/<image_filename>
+├── templates/
+│   └── instruction.html.j2 # Jinja2 template
+└── output/                # Generated files
+    ├── html/
+    │   └── <peoi>_<rev>.html
+    └── pdf/
+        └── <peoi>_<rev>.pdf
+```
+
+### Data Flow
+1. User inputs data in UI → Streamlit state updated
+2. On field change → JSON preview updated
+3. On Save → JSON validated + written to `./data/`
+4. On Generate → JSON loaded + merged with template + output written
+
+### Revision Tracking
+- Each save creates a new file with timestamp in name
+- History panel shows all files for current PEOI
+- Diff compares any two selected files using deepdiff:
+  from deepdiff import DeepDiff
+
+def compare_revisions(rev1_path, rev2_path):
+    with open(rev1_path) as f1, open(rev2_path) as f2:
+        old_data = json.load(f1)
+        new_data = json.load(f2)
+
+    diff = DeepDiff(old_data, new_data, verbose_level=2)
+    return diff
+
+## 5. Implementation Plan
+
+### Core Components
+
+1. **Schema Validation Module**
+   import json
+import jsonschema
+
+def load_schema(schema_path="schema.json"):
+    with open(schema_path) as f:
+        return json.load(f)
+
+def validate_instruction(data, schema=None):
+    if schema is None:
+        schema = load_schema()
+    try:
+        jsonschema.validate(instance=data, schema=schema)
+        return True, None
+    except jsonschema.exceptions.ValidationError as e:
+        return False, str(e)
+
+2. **HTML/PDF Renderer**
+   import jinja2
+import weasyprint
+from pathlib import Path
+
+def render_html(data, template_path="templates/instruction.html.j2"):
+    # Set up Jinja environment
+    env = jinja2.Environment(
+        loader=jinja2.FileSystemLoader("."),
+        autoescape=True
+    )
+
+    # Add custom filters
+    env.filters["process_refs"] = process_refs
+
+    # Load template
+    template = env.get_template(template_path)
+
+    # Add computed values
+    data["any_coshh_parts"] = any(p.get("is_coshh", False) for p in data.get("parts", []))
+
+    # Render HTML
+    html = template.render(**data)
+
+    # Save HTML
+    output_dir = Path("output/html")
+    output_dir.mkdir(exist_ok=True, parents=True)
+    output_path = output_dir / f"{data['metadata']['peoi']}_{data['metadata']['rev']}.html"
+    with open(output_path, "w") as f:
+        f.write(html)
+
+    return output_path
+
+def render_pdf(data, template_path="templates/instruction.html.j2"):
+    # First generate HTML
+    html_path = render_html(data, template_path)
+
+    # Convert to PDF
+    output_dir = Path("output/pdf")
+    output_dir.mkdir(exist_ok=True, parents=True)
+    output_path = output_dir / f"{data['metadata']['peoi']}_{data['metadata']['rev']}.pdf"
+
+    # Use WeasyPrint to convert HTML to PDF
+    pdf = weasyprint.HTML(filename=html_path).write_pdf()
+    with open(output_path, "wb") as f:
+        f.write(pdf)
+
+    return output_path
+
+3. **Streamlit Application**
+   import streamlit as st
+import json
+import datetime
+from pathlib import Path
+import uuid
+import shutil
+
+from utils.validators import validate_instruction
+from utils.renderer import render_html, render_pdf
+from utils.diff import compare_revisions
+
+st.set_page_config(page_title="Pektron Operator Instructions", layout="wide")
+st.title("Pektron Operator Instruction Editor")
+
+# Initialize session state
+if 'current_data' not in st.session_state:
+    st.session_state.current_data = {
+        "metadata": {
+            "peoi": "",
+            "rev": "A",
+            "title": "",
+            "author": "",
+            "date_created": datetime.date.today().isoformat()
+        },
+        "parts": [],
+        "tools": [],
+        "steps": [{"id": 1, "text": "", "images": []}],
+        "footer": {
+            "issue": "A",
+            "date": datetime.date.today().isoformat(),
+            "pe": ""
+        }
+    }
+
+# Tab control
+tab1, tab2, tab3, tab4 = st.tabs(["Header", "Parts & Tools", "Steps", "Footer"])
+
+with tab1:
+    # Header form
+    st.subheader("Instruction Header")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.session_state.current_data["metadata"]["peoi"] = st.text_input(
+            "PEOI Number",
+            value=st.session_state.current_data["metadata"]["peoi"],
+            help="Format: NNNN-NNN (e.g., 0201-102)"
+        )
+        st.session_state.current_data["metadata"]["title"] = st.text_input(
+            "Title",
+            value=st.session_state.current_data["metadata"]["title"]
+        )
+    with col2:
+        st.session_state.current_data["metadata"]["rev"] = st.selectbox(
+            "Revision",
+            options=list("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+            index=ord(st.session_state.current_data["metadata"]["rev"]) - ord("A")
+        )
+        st.session_state.current_data["metadata"]["author"] = st.text_input(
+            "Author",
+            value=st.session_state.current_data["metadata"]["author"]
+        )
+
+    st.session_state.current_data["metadata"]["description"] = st.text_area(
+        "Description",
+        value=st.session_state.current_data["metadata"].get("description", "")
+    )
+
+with tab2:
+    # Parts & Tools section
+    st.subheader("Parts")
+    parts_data = st.data_editor(
+        st.session_state.current_data["parts"],
+        column_config={
+            "pekpn": st.column_config.TextColumn("PEKPN"),
+            "description": st.column_config.TextColumn("Description"),
+            "quantity": st.column_config.NumberColumn("Quantity", default=1, min_value=1),
+            "is_coshh": st.column_config.CheckboxColumn("COSHH?", default=False),
+            "coshh_ref": st.column_config.TextColumn("COSHH Ref")
+        },
+        num_rows="dynamic"
+    )
+    st.session_state.current_data["parts"] = parts_data
+
+    st.subheader("Tools")
+    tools_data = st.data_editor(
+        st.session_state.current_data["tools"],
+        column_config={
+            "tool_id": st.column_config.TextColumn("Tool ID"),
+            "description": st.column_config.TextColumn("Description"),
+            "type": st.column_config.SelectboxColumn(
+                "Type",
+                options=["FIXTURE", "DRIVER", "SOLDER", "TEST", "OTHER"],
+                default="OTHER"
+            )
+        },
+        num_rows="dynamic"
+    )
+    st.session_state.current_data["tools"] = tools_data
+
+with tab3:
+    # Steps section
+    st.subheader("Steps")
+
+    # Step selector
+    step_count = len(st.session_state.current_data["steps"])
+    current_step = st.number_input("Step", min_value=1, max_value=max(step_count, 1), value=1)
+
+    # Ensure current step exists
+    if current_step > step_count:
+        st.session_state.current_data["steps"].append({"id": current_step, "text": "", "images": []})
+
+    # Step controls
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col1:
+        if st.button("Add Step"):
+            st.session_state.current_data["steps"].append({
+                "id": step_count + 1,
+                "text": "",
+                "images": []
+            })
+            st.rerun()
+
+    with col2:
+        if current_step < step_count and st.button("Delete Step"):
+            st.session_state.current_data["steps"].pop(current_step - 1)
+            # Renumber remaining steps
+            for i, step in enumerate(st.session_state.current_data["steps"]):
+                step["id"] = i + 1
+            st.rerun()
+
+    # Step content
+    step_idx = current_step - 1
+    current_step_data = st.session_state.current_data["steps"][step_idx]
+
+    # Text editor
+    current_step_data["text"] = st.text_area(
+        "Step Instructions",
+        value=current_step_data["text"],
+        height=150
+    )
+
+    # Image uploader
+    st.subheader("Images")
+    uploaded_file = st.file_uploader(f"Upload image for Step {current_step}", type=["jpg", "jpeg", "png"])
+    if uploaded_file is not None:
+        # Create directory structure
+        peoi = st.session_state.current_data["metadata"]["peoi"]
+        media_dir = Path(f"media/{peoi}")
+        media_dir.mkdir(exist_ok=True, parents=True)
+
+        # Generate unique filename
+        ext = uploaded_file.name.split(".")[-1]
+        img_id = f"IMG_{current_step}_{len(current_step_data['images']) + 1}"
+        filename = f"{img_id}.{ext}"
+        file_path = media_dir / filename
+
+        # Save file
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+
+        # Add to step's images
+        current_step_data["images"].append({
+            "image_id": img_id,
+            "filename": f"{peoi}/{filename}",
+            "caption": f"Step {current_step} image",
+            "output_formats": ["pdf", "html", "display"]
+        })
+
+        st.success(f"Image uploaded: {filename}")
+
+    # Display existing images
+    if current_step_data["images"]:
+        st.subheader("Existing Images")
+        for i, img in enumerate(current_step_data["images"]):
+            col1, col2 = st.columns([1, 3])
+            with col1:
+                st.image(f"media/{img['filename']}", width=150)
+            with col2:
+                # Edit image properties
+                img["caption"] = st.text_input(f"Caption for {img['image_id']}", value=img["caption"])
+                formats = st.multiselect(
+                    "Show in formats",
+                    options=["pdf", "html", "display"],
+                    default=img["output_formats"]
+                )
+                img["output_formats"] = formats
+
+                if st.button(f"Remove {img['image_id']}"):
+                    current_step_data["images"].pop(i)
+                    st.rerun()
+
+    # Notes and H&S
+    current_step_data["notes"] = st.text_area(
+        "Notes",
+        value=current_step_data.get("notes", ""),
+        height=100
+    )
+
+    current_step_data["health_safety"] = st.text_area(
+        "Health & Safety Notes",
+        value=current_step_data.get("health_safety", ""),
+        height=100
+    )
+
+with tab4:
+    # Footer section
+    st.subheader("Footer")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.session_state.current_data["footer"]["issue"] = st.selectbox(
+            "Issue",
+            options=list("ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+            index=ord(st.session_state.current_data["footer"]["issue"]) - ord("A")
+        )
+        st.session_state.current_data["footer"]["pe"] = st.text_input(
+            "Production Engineer",
+            value=st.session_state.current_data["footer"]["pe"]
+        )
+    with col2:
+        footer_date = st.session_state.current_data["footer"]["date"]
+        try:
+            footer_date = datetime.date.fromisoformat(footer_date)
+        except (ValueError, TypeError):
+            footer_date = datetime.date.today()
+
+        new_date = st.date_input("Date", value=footer_date)
+        st.session_state.current_data["footer"]["date"] = new_date.isoformat()
+
+        st.session_state.current_data["footer"]["qa"] = st.text_input(
+            "Quality Assurance",
+            value=st.session_state.current_data["footer"].get("qa", "")
+        )
+
+    st.session_state.current_data["footer"]["pd"] = st.text_input(
+        "Production Director",
+        value=st.session_state.current_data["footer"].get("pd", "")
+    )
+
+# JSON Preview
+st.subheader("JSON Preview")
+st.json(st.session_state.current_data)
+
+# Action buttons
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    if st.button("Validate"):
+        valid, error = validate_instruction(st.session_state.current_data)
+        if valid:
+            st.success("Validation successful!")
+        else:
+            st.error(f"Validation failed: {error}")
+
+with col2:
+    if st.button("Save"):
+        valid, error = validate_instruction(st.session_state.current_data)
+        if valid:
+            # Create data directory
+            data_dir = Path("data")
+            data_dir.mkdir(exist_ok=True)
+
+            # Generate filename with timestamp
+            peoi = st.session_state.current_data["metadata"]["peoi"]
+            rev = st.session_state.current_data["metadata"]["rev"]
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{peoi}_{rev}_{timestamp}.json"
+
+            # Save file
+            with open(data_dir / filename, "w") as f:
+                json.dump(st.session_state.current_data, f, indent=2)
+
+            st.success(f"Saved as {filename}")
+        else:
+            st.error(f"Cannot save invalid data: {error}")
+
+with col3:
+    if st.button("Generate HTML"):
+        try:
+            output_path = render_html(st.session_state.current_data)
+            st.success(f"HTML generated: {output_path}")
+
+            # Open in new tab
+            output_url = f"file://{output_path.absolute()}"
+            st.markdown(f'<a href="{output_url}" target="_blank">Open HTML</a>', unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f"Error generating HTML: {str(e)}")
+
+with col4:
+    if st.button("Generate PDF"):
+        try:
+            output_path = render_pdf(st.session_state.current_data)
+            st.success(f"PDF generated: {output_path}")
+
+            # Download link
+            with open(output_path, "rb") as f:
+                pdf_bytes = f.read()
+
+            st.download_button(
+                label="Download PDF",
+                data=pdf_bytes,
+                file_name=output_path.name,
+                mime="application/pdf"
+            )
+        except Exception as e:
+            st.error(f"Error generating PDF: {str(e)}")
+
+# History sidebar
+with st.sidebar:
+    st.title("Revision History")
+
+    # Display saved revisions
+    data_dir = Path("data")
+    if data_dir.exists():
+        peoi = st.session_state.current_data["metadata"]["peoi"]
+        if peoi:
+            # Find files for this PEOI
+            files = list(data_dir.glob(f"{peoi}_*.json"))
+            if files:
+                files.sort(reverse=True)  # Most recent first
+
+                st.subheader("Saved Revisions")
+                selected_files = st.multiselect(
+                    "Select revisions to compare (max 2)",
+                    options=[f.name for f in files],
+                    max_selections=2
+                )
+
+                if len(selected_files) == 1:
+                    # Load and display this revision
+                    file_path = data_dir / selected_files[0]
+                    with open(file_path) as f:
+                        revision_data = json.load(f)
+
+                    rev = revision_data["metadata"]["rev"]
+                    date = file_path.name.split("_")[-1].split(".")[0]
+                    st.info(f"Showing Rev {rev} saved on {date}")
+
+                    if st.button("Load Selected Revision"):
+                        st.session_state.current_data = revision_data
+                        st.rerun()
+
+                elif len(selected_files) == 2:
+                    # Compare two revisions
+                    file1 = data_dir / selected_files[0]
+                    file2 = data_dir / selected_files[1]
+
+                    st.subheader("Differences")
+                    diff = compare_revisions(file1, file2)
+
+                    if diff:
+                        # Display changes
+                        if "values_changed" in diff:
+                            st.subheader("Changed Values")
+                            for path, change in diff["values_changed"].items():
+                                st.write(f"**{path}**: {change['old_value']} → {change['new_value']}")
+
+                        if "dictionary_item_added" in diff:
+                            st.subheader("Added Items")
+                            for path in diff["dictionary_item_added"]:
+                                st.write(f"**Added**: {path}")
+
+                        if "dictionary_item_removed" in diff:
+                            st.subheader("Removed Items")
+                            for path in diff["dictionary_item_removed"]:
+                                st.write(f"**Removed**: {path}")
+                    else:
+                        st.info("No differences found.")
+
+## 6. Success Criteria
+
+1. **Functionality**
+   - Form captures all required data fields
+   - JSON Schema validation prevents invalid data
+   - HTML and PDF generation work with embedded images
+   - Revision tracking shows differences between versions
+
+2. **Quality**
+   - Correctly handles XML-like references in text
+   - Images correctly stored and displayed
+   - Error messages are clear and actionable
+   - PDF output is professionally formatted
+
+3. **Performance**
+   - UI remains responsive with large documents
+   - PDF generation completes in under 5 seconds
+   - File operations complete in under a second
+
+4. **Technical**
+   - Runs on standard Python 3.9+
+   - Setup is simple: `pip install -r requirements.txt`
+   - No external services required for POC
+
+## 7. Deliverables
+
+1. Working Streamlit application
+2. JSON Schema document
+3. Sample instruction file
+4. Generated HTML and PDF examples
+5. Basic user guide (1-page)
+
+## 8. Required Python Packages
+
+```
+streamlit==1.30.0
+jsonschema==4.20.0
+jinja2==3.1.2
+weasyprint==60.2
+pillow==10.1.0
+python-deepdiff==6.7.1
+```

@@ -1,0 +1,286 @@
+
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Instruction Document Schema",
+  "description": "Schema for instruction documents with header, parts, steps, footer, and change log",
+  "type": "object",
+  "required": ["header", "parts", "steps", "footer", "changeLog"],
+  "properties": {
+    "header": {
+      "type": "object",
+      "required": ["title", "documentNumber", "revision", "date"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Title of the instruction document"
+        },
+        "documentNumber": {
+          "type": "string",
+          "description": "Unique identifier for the document"
+        },
+        "revision": {
+          "type": "string",
+          "description": "Revision identifier (e.g., A, B, 1.0, 2.1)"
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date of the current revision in ISO 8601 format (YYYY-MM-DD)"
+        },
+        "author": {
+          "type": "string",
+          "description": "Author of the document"
+        },
+        "department": {
+          "type": "string",
+          "description": "Department responsible for the document"
+        },
+        "category": {
+          "type": "string",
+          "description": "Category or type of instruction"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tags for categorization and searching"
+        }
+      }
+    },
+    "parts": {
+      "type": "array",
+      "description": "List of parts required for the instruction",
+      "items": {
+        "type": "object",
+        "required": ["partNumber", "description", "quantity"],
+        "properties": {
+          "partNumber": {
+            "type": "string",
+            "description": "Unique identifier for the part"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the part"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Quantity of the part required"
+          },
+          "unit": {
+            "type": "string",
+            "description": "Unit of measurement (e.g., pcs, kg, m)"
+          },
+          "reference": {
+            "type": "string",
+            "description": "Reference information or link to part details"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Additional notes about the part"
+          },
+          "imageUri": {
+            "type": "string",
+            "format": "uri",
+            "description": "URI to an image of the part"
+          }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "description": "List of instruction steps",
+      "items": {
+        "type": "object",
+        "required": ["stepNumber", "description"],
+        "properties": {
+          "stepNumber": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Sequential number of the step"
+          },
+          "title": {
+            "type": "string",
+            "description": "Short title for the step"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the step"
+          },
+          "imageUri": {
+            "type": "string",
+            "format": "uri",
+            "description": "URI to an image illustrating the step"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Estimated duration of the step in minutes"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of warnings or cautions for this step"
+          },
+          "tools": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of tools required for this step"
+          },
+          "partsUsed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of part numbers used in this step"
+          },
+          "substeps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["substepNumber", "description"],
+              "properties": {
+                "substepNumber": {
+                  "type": "string",
+                  "description": "Identifier for the substep (e.g., 1.1, 1.2)"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Description of the substep"
+                },
+                "imageUri": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "URI to an image illustrating the substep"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "footer": {
+      "type": "object",
+      "properties": {
+        "approvals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "role", "date"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Name of the approver"
+              },
+              "role": {
+                "type": "string",
+                "description": "Role or position of the approver"
+              },
+              "date": {
+                "type": "string",
+                "format": "date",
+                "description": "Date of approval in ISO 8601 format (YYYY-MM-DD)"
+              },
+              "comments": {
+                "type": "string",
+                "description": "Optional comments from the approver"
+              }
+            }
+          }
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "General notes or additional information"
+        },
+        "references": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["title", "reference"],
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "Title of the reference"
+              },
+              "reference": {
+                "type": "string",
+                "description": "Reference identifier or URL"
+              },
+              "description": {
+                "type": "string",
+                "description": "Description of the reference"
+              }
+            }
+          }
+        },
+        "contactInformation": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Contact person name"
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "description": "Contact email address"
+            },
+            "phone": {
+              "type": "string",
+              "description": "Contact phone number"
+            },
+            "department": {
+              "type": "string",
+              "description": "Contact department"
+            }
+          }
+        }
+      }
+    },
+    "changeLog": {
+      "type": "array",
+      "description": "History of changes to the document",
+      "items": {
+        "type": "object",
+        "required": ["revision", "date", "author", "description"],
+        "properties": {
+          "revision": {
+            "type": "string",
+            "description": "Revision identifier (e.g., A, B, 1.0, 2.1)"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of the revision in ISO 8601 format (YYYY-MM-DD)"
+          },
+          "author": {
+            "type": "string",
+            "description": "Author of the changes"
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the changes made"
+          },
+          "approvedBy": {
+            "type": "string",
+            "description": "Person who approved the changes"
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of sections affected by the changes"
+          }
+        }
+      }
+    }
+  }
+}

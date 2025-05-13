@@ -1,0 +1,138 @@
+
+{
+  "header": {
+    "title": "Assembly Instructions for Model XYZ-100 Widget",
+    "documentNumber": "INST-2025-0042",
+    "revision": "B",
+    "date": "2025-05-10",
+    "author": "Jane Smith",
+    "department": "Engineering",
+    "category": "Assembly",
+    "tags": ["widget", "assembly", "mechanical", "production"]
+  },
+  "parts": [
+    {
+      "partNumber": "P-10045",
+      "description": "Main Frame Assembly",
+      "quantity": 1,
+      "unit": "pcs",
+      "reference": "DWG-10045-Rev2",
+      "notes": "Handle with care, painted surface",
+      "imageUri": "https://example.com/images/parts/P-10045.jpg"
+    },
+    {
+      "partNumber": "P-10046",
+      "description": "Control Panel",
+      "quantity": 1,
+      "unit": "pcs",
+      "reference": "DWG-10046-Rev1",
+      "notes": "ESD sensitive component",
+      "imageUri": "https://example.com/images/parts/P-10046.jpg"
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Prepare the Main Frame",
+      "description": "Remove the Main Frame Assembly from packaging and place on a clean, flat surface. Ensure all protective coverings are removed.",
+      "duration": 5,
+      "warnings": [
+        "Wear gloves to avoid fingerprints on painted surfaces",
+        "Inspect for shipping damage before proceeding"
+      ],
+      "tools": [
+        "Scissors",
+        "Gloves"
+      ],
+      "partsUsed": [
+        "P-10045"
+      ],
+      "imageUri": "https://example.com/images/steps/step1.jpg"
+    },
+    {
+      "stepNumber": 2,
+      "title": "Install Control Panel",
+      "description": "Align the Control Panel with the mounting points on the Main Frame Assembly. Ensure the connector is properly oriented.",
+      "duration": 10,
+      "warnings": [
+        "ESD sensitive components - use grounding strap",
+        "Do not overtighten screws"
+      ],
+      "tools": [
+        "Phillips screwdriver",
+        "ESD wrist strap"
+      ],
+      "partsUsed": [
+        "P-10046"
+      ],
+      "substeps": [
+        {
+          "substepNumber": "2.1",
+          "description": "Connect the ribbon cable from the Main Frame to the Control Panel",
+          "imageUri": "https://example.com/images/steps/step2-1.jpg"
+        },
+        {
+          "substepNumber": "2.2",
+          "description": "Secure the Control Panel using 4 screws (included with P-10046)"
+        }
+      ]
+    }
+  ],
+  "footer": {
+    "approvals": [
+      {
+        "name": "Robert Johnson",
+        "role": "Engineering Manager",
+        "date": "2025-05-08",
+        "comments": "Approved with minor comments addressed"
+      },
+      {
+        "name": "Sarah Chen",
+        "role": "Quality Assurance",
+        "date": "2025-05-09",
+        "comments": "Verified against production unit"
+      }
+    ],
+    "notes": [
+      "These instructions are for trained personnel only",
+      "Allow approximately 30 minutes for complete assembly",
+      "Refer to calibration procedure PROC-2025-0015 after assembly"
+    ],
+    "references": [
+      {
+        "title": "XYZ-100 Technical Specification",
+        "reference": "SPEC-2025-0042",
+        "description": "Complete technical specifications for the XYZ-100 Widget"
+      },
+      {
+        "title": "Quality Inspection Checklist",
+        "reference": "QC-2025-0042",
+        "description": "Checklist for final inspection after assembly"
+      }
+    ],
+    "contactInformation": {
+      "name": "Technical Support Team",
+      "email": "support@example.com",
+      "phone": "+1-555-123-4567",
+      "department": "Customer Support"
+    }
+  },
+  "changeLog": [
+    {
+      "revision": "A",
+      "date": "2025-04-15",
+      "author": "Jane Smith",
+      "description": "Initial release",
+      "approvedBy": "Robert Johnson",
+      "sections": ["All"]
+    },
+    {
+      "revision": "B",
+      "date": "2025-05-10",
+      "author": "Jane Smith",
+      "description": "Updated Step 2 with additional substeps for clarity. Added warning about ESD sensitivity.",
+      "approvedBy": "Robert Johnson",
+      "sections": ["steps", "parts"]
+    }
+  ]
+}
