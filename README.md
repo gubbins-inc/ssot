@@ -1,2 +1,2 @@
 # ssot
-prodengSSOT
+prodeng single source of truth
